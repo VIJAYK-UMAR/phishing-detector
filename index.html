@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Phishing Detector | Hacker UI</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: black;
+      overflow: hidden;
+      font-family: 'Courier New', monospace;
+      color: #00ff00;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+
+    canvas#matrix {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      text-align: center;
+      text-shadow: 0 0 15px #00ff00;
+      z-index: 2;
+    }
+
+    .terminal-box {
+      background-color: #111;
+      border: 2px solid #00ff00;
+      padding: 20px;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 550px;
+      box-shadow: 0 0 30px #00ff0055;
+      text-align: center;
+      z-index: 2;
+      position: relative;
+    }
+
+    .url-form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    input[type="text"] {
+      padding: 12px;
+      background: #000;
+      color: #00ff00;
+      border: 1px solid #00ff00;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+
+    button {
+      padding: 12px;
+      background: #000;
+      color: #00ff00;
+      font-weight: bold;
+      border: 2px solid #00ff00;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.2s ease-in-out;
+    }
+
+    button:hover {
+      background: #00ff00;
+      color: #000;
+      box-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00;
+    }
+
+    .result {
+      margin-top: 15px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      text-align: center;
+      min-height: 1.5rem;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    .zoom {
+      animation: zoomEffect 0.5s ease-in-out 0s 4 alternate;
+    }
+
+    @keyframes zoomEffect {
+      from {
+        transform: scale(1);
+      }
+      to {
+        transform: scale(1.3);
+      }
+    }
+
+    .console {
+      text-align: left;
+      margin-top: 15px;
+      font-size: 0.85rem;
+      background: #000;
+      padding: 10px;
+      border: 1px solid #0f0;
+      height: 100px;
+      overflow-y: auto;
+      border-radius: 4px;
+      box-shadow: inset 0 0 10px #0f0;
+    }
+
+    .footer {
+      text-align: center;
+      font-size: 0.8rem;
+      color: #0f0;
+      opacity: 0.5;
+      margin-top: 10px;
+      z-index: 2;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="matrix"></canvas>
+
+  <h1>💀 Hacker Phishing Detector 💀</h1>
+  <div class="terminal-box">
+    <form class="url-form" id="form">
+      <input type="text" id="urlInput" placeholder="Enter a URL to scan for threats..." required />
+      <button type="submit">⚠️ Scan Now</button>
+    </form>
+    <div class="result" id="result"></div>
+    <div class="console" id="console"></div>
+  </div>
+
+  
+
+  <audio id="scanSound">
+    <source src="https://www.soundjay.com/button/beep-07.wav" type="audio/wav">
+  </audio>
+
+  <script>
+    const canvas = document.getElementById("matrix");
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    let rainColor = "#0f0"; // default green
+    const letters = "0123456789ABCDEF";
+    const fontSize = 14;
+    const columns = Math.floor(canvas.width / fontSize);
+    const drops = Array(columns).fill(1);
+
+    function drawMatrix() {
+      ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = rainColor;
+      ctx.font = fontSize + "px monospace";
+      for (let i = 0; i < drops.length; i++) {
+        const text = letters[Math.floor(Math.random() * letters.length)];
+        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+        drops[i]++;
+        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+          drops[i] = 0;
+        }
+      }
+    }
+    setInterval(drawMatrix, 33);
+
+    const form = document.getElementById('form');
+    const input = document.getElementById('urlInput');
+    const result = document.getElementById('result');
+    const consoleLog = document.getElementById('console');
+    const sound = document.getElementById('scanSound');
+
+    function logToConsole(message) {
+      const timestamp = new Date().toLocaleTimeString();
+      consoleLog.innerHTML += `[${timestamp}] ${message}<br>`;
+      consoleLog.scrollTop = consoleLog.scrollHeight;
+    }
+
+    window.onload = () => {
+      logToConsole("[OK] Initializing HackerSec Engine...");
+      logToConsole("[OK] Connecting to Cyber Intel Network...");
+      logToConsole("[OK] AI Phishing Model Loaded");
+    };
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const url = input.value;
+      result.textContent = '';
+      result.classList.remove("zoom");
+      result.style.borderRight = "2px solid #0f0";
+      void result.offsetWidth; // trigger reflow to reset animation
+      consoleLog.innerHTML = '';
+      logToConsole("Initializing scan...");
+      logToConsole(`URL: ${url}`);
+      sound.play();
+
+      try {
+        const response = await fetch('http://127.0.0.1:5000/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url })
+        });
+
+        const data = await response.json();
+        sound.play();
+
+        if (data.result === true) {
+          result.textContent = `✅ The URL is Legitimate.`;
+          result.style.color = '#00ff99';
+          result.style.borderRight = "none";
+          rainColor = '#00ff99';
+          result.classList.add("zoom");
+          logToConsole("Scan Complete: URL is safe ✅");
+        } else if (data.result === false) {
+          result.textContent = `🚨 The URL is Phishing.`;
+          result.style.color = '#ff0000';
+          result.style.borderRight = "2px solid #0f0";
+          rainColor = '#ff0000';
+          logToConsole("Scan Complete: URL is malicious 🚨");
+        } else if (data.error) {
+          result.textContent = `❌ Error: ${data.error}`;
+          result.style.color = '#ff0000';
+          result.style.borderRight = "2px solid #0f0";
+          logToConsole("Scan Failed: Internal error ❌");
+        }
+      } catch (error) {
+        result.textContent = `❌ Request failed: ${error.message}`;
+        result.style.color = '#ff0000';
+        result.style.borderRight = "2px solid #0f0";
+        logToConsole("Scan Failed: Network issue ❌");
+      }
+    });
+  </script>
+  <div class="footer" style="position: fixed; bottom: 5px; width: 100%; text-align: center; background: rgba(0, 0, 0, 0.85); padding: 8px 0; box-shadow: 0 0 10px #00ff00; font-weight: bold; color: #00ff00; z-index: 3;">
+    © 2025 HackerSec | Built for Cybersecurity Ops<br>Created by <strong>NOONE VIJAY KUMAR</strong>
+  </div>
+</body>
+</html>
