@@ -2,22 +2,20 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Phishing Detector | Hacker UI</title>
+  <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/808/808435.png">
   <style>
+    * { box-sizing: border-box; }
+
     html, body {
       margin: 0;
       padding: 0;
       background: black;
-      overflow: hidden;
       font-family: 'Courier New', monospace;
       color: #00ff00;
       height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      position: relative;
+      overflow: hidden;
     }
 
     canvas#matrix {
@@ -30,11 +28,21 @@
       pointer-events: none;
     }
 
+    .content {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: calc(100vh - 60px);
+    }
+
     h1 {
-      font-size: 2.5rem;
+      font-size: 2rem;
       text-align: center;
       text-shadow: 0 0 15px #00ff00;
-      z-index: 2;
+      margin-bottom: 20px;
     }
 
     .terminal-box {
@@ -42,12 +50,10 @@
       border: 2px solid #00ff00;
       padding: 20px;
       border-radius: 10px;
-      width: 90%;
-      max-width: 550px;
+      width: 95%;
+      max-width: 500px;
       box-shadow: 0 0 30px #00ff0055;
       text-align: center;
-      z-index: 2;
-      position: relative;
     }
 
     .url-form {
@@ -63,6 +69,13 @@
       border: 1px solid #00ff00;
       border-radius: 5px;
       font-size: 1rem;
+      width: 100%;
+      transition: box-shadow 0.2s ease;
+    }
+
+    input[type="text"]:focus {
+      box-shadow: 0 0 10px #00ff00;
+      outline: none;
     }
 
     button {
@@ -88,21 +101,8 @@
       font-weight: bold;
       text-align: center;
       min-height: 1.5rem;
-      white-space: nowrap;
-      overflow: hidden;
-    }
-
-    .zoom {
-      animation: zoomEffect 0.5s ease-in-out 0s 4 alternate;
-    }
-
-    @keyframes zoomEffect {
-      from {
-        transform: scale(1);
-      }
-      to {
-        transform: scale(1.3);
-      }
+      white-space: normal;
+      word-wrap: break-word;
     }
 
     .console {
@@ -118,33 +118,70 @@
       box-shadow: inset 0 0 10px #0f0;
     }
 
-    .footer {
-      text-align: center;
-      font-size: 0.8rem;
-      color: #0f0;
-      opacity: 0.5;
+    .copy-btn {
       margin-top: 10px;
-      z-index: 2;
+      padding: 6px 12px;
+      background: #000;
+      color: #00ff00;
+      border: 1px solid #00ff00;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    .copy-btn:hover {
+      background: #00ff00;
+      color: #000;
+    }
+
+    @keyframes zoomPulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.15); }
+      100% { transform: scale(1); }
+    }
+
+    .zoom-effect {
+      animation: zoomPulse 1.2s infinite;
+    }
+
+    .footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      padding: 10px 0;
+      text-align: center;
+      font-size: 0.9rem;
+      color: #00ff00;
+      text-shadow: 0 0 5px #00ff00, 0 0 10px #00ff00;
+      box-shadow: 0 -2px 10px #00ff00;
+      z-index: 999;
     }
   </style>
 </head>
 <body>
   <canvas id="matrix"></canvas>
 
-  <h1>💀 Hacker Phishing Detector 💀</h1>
-  <div class="terminal-box">
-    <form class="url-form" id="form">
-      <input type="text" id="urlInput" placeholder="Enter a URL to scan for threats..." required />
-      <button type="submit">⚠️ Scan Now</button>
-    </form>
-    <div class="result" id="result"></div>
-    <div class="console" id="console"></div>
+  <div class="content">
+    <h1>💀 Hacker Phishing Detector 💀</h1>
+
+    <div class="terminal-box">
+      <form class="url-form" id="form">
+        <input type="text" id="urlInput" placeholder="Enter a URL to scan..." required />
+        <button type="submit">⚠️ Scan Now</button>
+      </form>
+      <div class="result" id="result"></div>
+      <button class="copy-btn" onclick="copyResult()">📋 Copy Result</button>
+      <div class="console" id="console"></div>
+    </div>
   </div>
 
-  
-
-  <audio id="scanSound">
+  <audio id="beep">
     <source src="https://www.soundjay.com/button/beep-07.wav" type="audio/wav">
+  </audio>
+  <audio id="alert">
+    <source src="https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3" type="audio/mpeg">
   </audio>
 
   <script>
@@ -152,8 +189,7 @@
     const ctx = canvas.getContext("2d");
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-
-    let rainColor = "#0f0"; // default green
+    let rainColor = "#0f0";
     const letters = "0123456789ABCDEF";
     const fontSize = 14;
     const columns = Math.floor(canvas.width / fontSize);
@@ -179,7 +215,8 @@
     const input = document.getElementById('urlInput');
     const result = document.getElementById('result');
     const consoleLog = document.getElementById('console');
-    const sound = document.getElementById('scanSound');
+    const beep = document.getElementById('beep');
+    const alertSound = document.getElementById('alert');
 
     function logToConsole(message) {
       const timestamp = new Date().toLocaleTimeString();
@@ -187,63 +224,68 @@
       consoleLog.scrollTop = consoleLog.scrollHeight;
     }
 
-    window.onload = () => {
-      logToConsole("[OK] Initializing HackerSec Engine...");
-      logToConsole("[OK] Connecting to Cyber Intel Network...");
-      logToConsole("[OK] AI Phishing Model Loaded");
-    };
+    function copyResult() {
+      navigator.clipboard.writeText(result.textContent)
+        .then(() => alert("Result copied!"))
+        .catch(() => alert("Failed to copy!"));
+    }
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const url = input.value;
-      result.textContent = '';
-      result.classList.remove("zoom");
+      let url = input.value.trim();
+      if (!url.startsWith("http")) {
+        url = "http://" + url;
+      }
+
+      result.textContent = "⏳ Scanning...";
+      result.style.color = "#0f0";
+      result.classList.remove("zoom-effect");
       result.style.borderRight = "2px solid #0f0";
-      void result.offsetWidth; // trigger reflow to reset animation
+      void result.offsetWidth;
       consoleLog.innerHTML = '';
-      logToConsole("Initializing scan...");
-      logToConsole(`URL: ${url}`);
-      sound.play();
+      logToConsole("Scanning URL: " + url);
+      beep.play();
 
       try {
-        const response = await fetch('http://127.0.0.1:5000/predict', {
+        const response = await fetch('https://phishing-detector-gl21.onrender.com/predict', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ url })
         });
 
         const data = await response.json();
-        sound.play();
+        result.style.borderRight = "none";
 
         if (data.result === true) {
           result.textContent = `✅ The URL is Legitimate.`;
           result.style.color = '#00ff99';
-          result.style.borderRight = "none";
           rainColor = '#00ff99';
-          result.classList.add("zoom");
-          logToConsole("Scan Complete: URL is safe ✅");
+          result.classList.add("zoom-effect");
+          beep.play();
+          logToConsole("✔ Result: Safe ✅");
         } else if (data.result === false) {
           result.textContent = `🚨 The URL is Phishing.`;
           result.style.color = '#ff0000';
-          result.style.borderRight = "2px solid #0f0";
           rainColor = '#ff0000';
-          logToConsole("Scan Complete: URL is malicious 🚨");
-        } else if (data.error) {
+          result.classList.add("zoom-effect");
+          alertSound.play();
+          logToConsole("⚠️ Result: Malicious 🚨");
+        } else {
           result.textContent = `❌ Error: ${data.error}`;
           result.style.color = '#ff0000';
-          result.style.borderRight = "2px solid #0f0";
-          logToConsole("Scan Failed: Internal error ❌");
+          logToConsole("❌ Internal Error");
         }
       } catch (error) {
         result.textContent = `❌ Request failed: ${error.message}`;
         result.style.color = '#ff0000';
-        result.style.borderRight = "2px solid #0f0";
-        logToConsole("Scan Failed: Network issue ❌");
+        logToConsole("❌ Network Error");
       }
     });
   </script>
-  <div class="footer" style="position: fixed; bottom: 5px; width: 100%; text-align: center; background: rgba(0, 0, 0, 0.85); padding: 8px 0; box-shadow: 0 0 10px #00ff00; font-weight: bold; color: #00ff00; z-index: 3;">
-    © 2025 HackerSec | Built for Cybersecurity Ops<br>Created by <strong>NOONE VIJAY KUMAR</strong>
+
+  <div class="footer">
+    © 2025 HackerSec | Built for Cybersecurity Ops<br>
+    Created by <strong>NOONE VIJAY KUMAR</strong> | All rights reserved.
   </div>
 </body>
 </html>
