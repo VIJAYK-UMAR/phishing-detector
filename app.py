@@ -12,6 +12,11 @@ CORS(app)  # ✅ Enable CORS for all routes
 # Load the trained phishing detection model
 model = joblib.load("phishing_model.pkl")
 
+@app.route('/')
+def home():
+    return "<h2>✅ Server is live! Backend is working.</h2>", 200
+
+
 @app.route("/predict", methods=["POST"])
 def predict():
     try:
