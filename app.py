@@ -1,67 +1,42 @@
 from flask import Flask, request, jsonify
-from flask_cors import CORS
+from flask_cors import CORS  # ✅ Import CORS
 import joblib
-import os
 import pandas as pd
-import warnings
-import re
-from urllib.parse import urlparse
+from Phishing_Detector import extract_features
+from waitress import serve
 
-# Suppress unnecessary warnings
-warnings.filterwarnings("ignore", category=UserWarning)
 
 app = Flask(__name__)
-CORS(app)
+CORS(app)  # ✅ Enable CORS for all routes
 
-# ✅ Load model only once at startup
+# Load the trained phishing detection model
 model = joblib.load("phishing_model.pkl")
 
-# ✅ Custom feature extraction logic from URL
-def extract_features_from_url(url):
-    features = []
-
-    # Example features — add yours accordingly
-    features.append(1 if re.search(r"\d", url) else 0)  # has digits
-    features.append(1 if "@" in url else 0)             # has @ symbol
-    features.append(len(url))                           # URL length
-    features.append(url.count('.'))                     # number of dots
-    features.append(1 if "https" in url else 0)         # uses HTTPS
-    features.append(1 if "-" in url else 0)             # has hyphen
-    features.append(1 if re.match(r"http[s]?://\d+\.\d+\.\d+\.\d+", url) else 0)  # IP address
-    
-    # Pad or trim to match model’s feature length
-    if len(features) < len(model.feature_names_in_):
-        features += [0] * (len(model.feature_names_in_) - len(features))
-    elif len(features) > len(model.feature_names_in_):
-        features = features[:len(model.feature_names_in_)]
-
-    return features
-
-# ✅ Route to check backend status
-@app.route('/')
-def home():
-    return "✅ Backend is live! Use POST /predict with a URL."
-
-# ✅ Main prediction route
-@app.route('/predict', methods=['POST'])
+@app.route("/predict", methods=["POST"])
 def predict():
     try:
         data = request.get_json()
         url = data.get("url")
+        print(f"📥 Received URL: {url}")
 
-        if not url:
-            return jsonify({'error': 'URL not provided'}), 400
+        # Extract features from the URL
+        features = extract_features(url)
+        print(f"🧠 Features extracted: {features}")
 
-        features = extract_features_from_url(url)
-        input_df = pd.DataFrame([features], columns=model.feature_names_in_)
-        prediction = model.predict(input_df)[0]
+        # Create DataFrame for prediction
+        df = pd.DataFrame([features])
+        prediction = model.predict(df)[0]
+        print(f"🔮 Prediction result: {prediction}")
 
-        return jsonify({'result': bool(prediction)})
-
+        return jsonify({"result": bool(prediction == 1)})  # True for Legitimate
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"❌ Error occurred: {e}")
+        return jsonify({"error": str(e)})
 
-# ✅ Production deployment using waitress
-if __name__ == '__main__':
-    from waitress import serve
-    serve(app, host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
+if __name__ == "__main__":
+    app.run(debug=True)
+
+
+# if __name__ == "__main__":
+#     from waitress import serve
+#     serve(app, host="0.0.0.0", port=5000)
